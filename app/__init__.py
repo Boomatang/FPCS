@@ -4,6 +4,10 @@ from flask_login import LoginManager
 from config import config
 
 db = SQLAlchemy()
+login_manager = LoginManager()
+login_manager.session_protection = 'strong'
+
+
 
 def create_app(config_name):
     """
