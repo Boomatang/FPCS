@@ -4,12 +4,49 @@ This module holds the database models that are going to be used
 There is a reason to have machine class and a log file for them machines, but as I do not know what information that would be required to be logged this has been left out for now.
 
 """
+from datetime import datetime
+from flask_login import UserMixin
 
-class User():
+from . import db, login_manager
+from werkzeug.security import generate_password_hash, check_password_hash
+
+class User(UserMixin, db.Model):
     """
     The class for the system users
     A User wilkl most likly be part of the Labour class. This is not clear as of yet.
+    
+    All the informationis the basic that is need to use the flask login manger
     """
+    
+    __tablename__ = 'users'
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String)
+    email = db.Column(db.String)
+    signup_date = db.Column(db.Date)
+    confirmed = db.Column(db.Boolean, default=True)
+    password_hash = db.Column(db.String(128))
+    last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
+
+    @property
+    def password(self):
+        raise AttributeError('password is not a readable attribute')
+
+    @password.setter
+    def password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def verify_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    def ping(self):
+        self.last_seen = datetime.utcnow()
+        db.session.add(self)
+
+    def __repr__(self):
+        return "<User %s, %s>" % (self.ID, self.username)
+    
+    
     
 class Project():
     """
@@ -59,3 +96,10 @@ class Material():
     A list of materials that can be ordered.
     This should cover raw materials and machine consumables
     """
+
+@login_manager.user_loader
+def load_user(user_id):
+    """
+    This function is required by the login manger to load users into the session
+    """
+    return User.query.get(int(user_id))
