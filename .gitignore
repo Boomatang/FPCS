@@ -186,3 +186,4 @@ ENV/
 .idea
 sys.var
 *.sqlite
+trial/

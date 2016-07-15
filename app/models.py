@@ -1,14 +1,24 @@
 """
 This module holds the database models that are going to be used
 
-There is a reason to have machine class and a log file for them machines, but as I do not know what information that would be required to be logged this has been left out for now.
+There is a reason to have machine class and a log file for them machines, 
+but as I do not know what information that would be required to be logged this has been left out for now.
 
 """
 from datetime import datetime
-from flask_login import UserMixin
+
+from flask_login import UserMixin, AnonymousUserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from . import db, login_manager
-from werkzeug.security import generate_password_hash, check_password_hash
+# link tables
+labour_skills = db.Table('labour_skills',
+                         db.Column('labour_force.id', db.Integer, db.ForeignKey('labour_force.id')),
+                         db.Column('skills.id', db.Integer, db.ForeignKey('skills.id')))
+
+company_contacts = db.Table('company_contacts',
+                            db.Column('companies.id', db.Integer, db.ForeignKey('companies.id')),
+                            db.Column('contacts.id', db.Integer, db.ForeignKey('contacts.id')))
 
 
 class Permission:
@@ -21,7 +31,7 @@ class Permission:
     PLANNING = 0x04
     RWC = 0x08
     ADMINISTER = 0x80
-    
+
 
 class User(UserMixin, db.Model):
     """
@@ -30,7 +40,7 @@ class User(UserMixin, db.Model):
     
     All the informationis the basic that is need to use the flask login manger
     """
-    
+
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -58,15 +68,57 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return "<User %s, %s>" % (self.ID, self.username)
-    
-    
-    
-class Project():
+
+
+class Project(db.Model):
     """
     The projects are top level jobs. All projects will have a least one job.
     This one job will always have the value of '01'. Will the project will have a key made from the year+month+job number. 
     That job key might not be used as the primary key as a project for tender would not have the job number section.
+    
+    The number value is the number that of that project in a year and this is rest every year
+    
+    The status value will be similiar to the permission system
+    
+    The active can only be set to default when all the sub jobs are set to false.
     """
+    
+    __tablename__ = 'projects'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String)
+    description = db.Column(db.Text)
+    year = db.Column(db.Integer)
+    month = db.Column(db.Integer)
+    number = db.Column(db.Integer)
+    due_date = db.Column(db.DateTime)
+    entry_date = db.Column(db.DateTime)
+    priority = db.Column(db.Integer)
+    status = db.Column(db.Integer)
+    active = db.Column(db.Boolean, default=True)
+    location = db.Column(db.String) #  This may need to be an address function
+    
+    
+    company = db.Column(db.Integer, db.ForeignKey('companies.id'))
+    contact = db.Column(db.Integer, db.ForeignKey('contacts.id'))
+    jobs = db.relationship('Job', backref='project', lazy='dynamic')
+    
+    @property
+    def project_number(self):
+        """
+        This builds the project number in the format yyyy-mm-##
+        The leading zeros are added to the month if required
+        An exampe is 2016-05-167
+        """
+        
+    def convert_number(self, number):
+        """
+        This function will convert a string based project number back to its basic elements.
+        """
+    
+    def __repr__(self):
+        return "<ID: %r, Project Number: %r>" % (self.id, self.project_number)
+
 
 class TimeLog(db.Model):
     """
@@ -77,45 +129,77 @@ class TimeLog(db.Model):
     
     Question does there need to be an entry method to allow time been given to the entire project and not just one job.
     """
-    
+
     __tablename__ = 'time_log'
-    
+
     labour_id = db.Column(db.Integer, db.ForeignKey('labour_force.id'), primary_key=True)
-    job_id
-    time = db.Column(db.date())
-    
-class Job():
+    job_id = db.Column(db.Integer, db.ForeignKey('jobs.id'), primary_key=True)
+    time = db.Column(db.DateTime())
+
+
+class Job(db.Model):
     """
     The Job class will be the sub elements that make up the Project class.
     These will share information with the the other jobs in the project but should be able to stand indepentent of other jobs
-    """
- 
- 
- 
-class CompanyContact(db.Model):
-    """
-    This class to to hold the contacts for a company. 
-    It is taken that a contact can be part of more than one company.
+    
+    The number value is the number which is a sub part of the job number.
+    An example of this is 2016-05-167-03 <- the last 03 is the number value.
+    
+    
+    The active is if the job has not been complete or taken of the books. 
+    A job been tendered would still be active
+    
+    For the status value I am thinking some thing like how the permissions are done.
+    
     """
     
-    __tablename__ = "company_contacts"
+    __tablename__ = "jobs"
     
-    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), primary_key=True)
-    contact_id = db.Column(db.Integer, db.ForeignKey('contacts.id'), primary_key=True)
- 
- 
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String)
+    description = db.Column(db.Text)
+    number = db.Column(db.Integer) #  This is the number given in order o the project
+    due_date = db.Column(db.DateTime)
+    enrty_date = db.Column(db.DateTime, default=datetime.utcnow())
+    quantity = db.Column(db.Integer)
+    exexution = db.Column(db.String) 
+    structural = db.Column(db.Boolean)
+    active = db.Column(db.Boolean, default=True)
+    status = db.Column(db.Integer)
+    priority = db.Column(db.Integer)
+    
+    project = db.Column(db.Integer, db.ForeignKey('projects.id'))
+    
+    
+    @property
+    def job_number(self):
+        """
+        This function returns a job number that is formated in the manner that is required.
+        If the project has only one job then the project number is return aka 2016-05-167
+        else the full number is returned 2016-05-167-03
+        """
+        
+    def convert_number(self, number):
+        """
+        This function will convert a string based job number back to its basic elements.
+        It does allow for input of 2016-05-167 and 2016-05-167-03
+        """
+
+    def __repr__(self):
+        return "<ID: %r, Job Number: %r>" % (self.id, self.job_number)
+
 class Company(db.Model):
     """
     The Company is the client Companies and this should be used for an address book type system.
     A company will have contacts but a company can be set up with out any contacts.
     """
-    
+
     __tablename__ = "companies"
-    
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     description = db.Column(db.String)
-    main_contact = db.Column(db.Integer) # links to a Contact.id
+    main_contact = db.Column(db.Integer)  # links to a Contact.id
     default_email = db.Column(db.String)
     default_phone_1 = db.Column(db.String)
     default_phone_2 = db.Column(db.String)
@@ -125,52 +209,40 @@ class Company(db.Model):
     address_county = db.Column(db.String)
     address_country = db.Column(db.String)
     address_postcode = db.Column(db.String)
-    
-    contact = db.relationship('CompanyContact', 
-                              foreign_keys=[CompanyContact.contact_id],
-                              backref=db.backref("contacts.company", lazy='joined'),
-                              lazy='dynamic')
-    
+
+    contact = db.relationship('Contact', secondary=company_contacts,
+                              backref=db.backref('company', lazy='dynamic'))
+    projects = db.relationship('Porject', backref='company', lazy='dynamic')
+
+    def __repr__(self):
+        return "<Company: %r>" % self.name
+
+
 class Contact(db.Model):
     """
     Every company can have a contact. A contact does not need to be part of any company.
     This is like an address book
     """
-    
+
     __tablename__ = "contacts"
-    
+
     id = db.Column(db.Integer, primary_key=True)
     first_name = db.Column(db.String)
     last_name = db.Column(db.String)
-    postition = db.Column(db.String) # may need to allow for multi
-    mobile = db.Column(db.String) # may need to allow for multi
-    land_line = db.Column(db.String) # may need to allow for multi
-    email = db.Column(db.String) # may need to allow for multi
+    position = db.Column(db.String)  # may need to allow for multi
+    mobile = db.Column(db.String)  # may need to allow for multi
+    land_line = db.Column(db.String)  # may need to allow for multi
+    email = db.Column(db.String)  # may need to allow for multi
     entry_date = db.Column(db.DateTime(), default=datetime.utcnow)
     last_contacted = db.Column(db.DateTime())
     
-    company = db.relationship('CompanyContact', 
-                              foreign_keys=[CompanyContact.company_id],
-                              backref=db.backref("compaines.contact", lazy='joined'),
-                              lazy='dynamic')
     
+    projects = db.relationship('Porject', backref='contact', lazy='dynamic')
+
     def __repr__(self):
         return "<Contact %r: %r %r>" % (self.id, self.first_name, self.last_name)
-    
 
-class LabourSkill(db.Model)
-    """
-    The link between the labour force and the skills they have.
-    
-    """
-    
-    __tablename__ = "labour_skills"
-    
-    labour_id = db.Column(db.Integer, db.ForeignKey('labour_force.id'), primary_key=True)
-    skill_id = db.Column(db.Integer, db.ForeignKey('skills.id'), primary_key=True)
- 
-    
-    
+
 class Labour(db.Model):
     """
     This is a list of the worker that can be used on jobs. A Labour worker does not need to be part of the User class.
@@ -178,27 +250,25 @@ class Labour(db.Model):
     
     The hourly rate is used over having a sarly to make it easier to calulate values later
     """
-    
+
     __tablename__ = 'labour_force'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     first_name = db.Column(db.String)
     last_name = db.Column(db.String)
-    postition = db.Column(db.String) # may need to allow for multi
-    mobile = db.Column(db.String) # may need to allow for multi
-    land_line = db.Column(db.String) # may need to allow for multi
-    email = db.Column(db.String) # may need to allow for multi
+    position = db.Column(db.String)  # may need to allow for multi
+    mobile = db.Column(db.String)  # may need to allow for multi
+    land_line = db.Column(db.String)  # may need to allow for multi
+    email = db.Column(db.String)  # may need to allow for multi
     entry_date = db.Column(db.DateTime(), default=datetime.utcnow)
-    
-    skill = db.relationship('LabourSkill', 
-                              foreign_keys=[LabourSkill.skill_id],
-                              backref=db.backref("skills.labour", lazy='joined'),
-                              lazy='dynamic')
-    
+
+    skill = db.relationship('Skill', secondary=labour_skills,
+                            backref=db.backref('labour', lazy='dynamic'))
+
     def __repr__(self):
         return "<Labour %r: %r %r>" % (self.id, self.first_name, self.last_name)
-    
-    
+
+
 class Skill(db.Model):
     """
     Holds the types of skills that the Labour has.
@@ -206,44 +276,42 @@ class Skill(db.Model):
     
     
     Here the value is the level to which the skill is worth to the company
-    The diffaculty is how hard it is regard to carry out that skill
+    The difficulty is how hard it is regard to carry out that skill
     """
-    
+
     __tablename__ = 'skills'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     description = db.Column(db.String)
     value = db.Column(db.Integer)
-    diffaculty = db.Column(db.Integer)
-    
-    
-    labour = db.relationship('LabourSkill', 
-                              foreign_keys=[LabourSkill.labour_id],
-                              backref=db.backref("labour_force.skill", lazy='joined'),
-                              lazy='dynamic')
-    
+    difficulty = db.Column(db.Integer)
+
     def __repr__(self):
         return "<Skill: %r>" % self.name
-    
-    
+
+
 class Material():
     """
     A list of materials that can be ordered.
     This should cover raw materials and machine consumables
     """
 
+
 class AnonymousUser(AnonymousUserMixin):
     """
     This class should never be needed but can't hurt to have in place from the start
     """
+
     def can(self, permissions):
         return False
 
     def is_administrator(self):
         return False
 
+
 login_manager.anonymous_user = AnonymousUser
+
 
 @login_manager.user_loader
 def load_user(user_id):
