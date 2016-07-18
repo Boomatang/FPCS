@@ -46,10 +46,15 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String)
     email = db.Column(db.String)
-    signup_date = db.Column(db.Date)
-    confirmed = db.Column(db.Boolean, default=True)
+    signup_date = db.Column(db.Date, default=datetime.utcnow())
+    confirmed = db.Column(db.Boolean, default=False)
     password_hash = db.Column(db.String(128))
-    last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
+    last_seen = db.Column(db.DateTime(), default=datetime.utcnow())
+
+    def __init__(self, email, password, username=None):
+        self.email = email
+        self.password = password
+        self.username = username
 
     @property
     def password(self):
@@ -96,11 +101,10 @@ class Project(db.Model):
     priority = db.Column(db.Integer)
     status = db.Column(db.Integer)
     active = db.Column(db.Boolean, default=True)
-    location = db.Column(db.String) #  This may need to be an address function
-    
-    
-    company = db.Column(db.Integer, db.ForeignKey('companies.id'))
-    contact = db.Column(db.Integer, db.ForeignKey('contacts.id'))
+    location = db.Column(db.String) # This may need to be an address function
+
+    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'))
+    contact_id = db.Column(db.Integer, db.ForeignKey('contacts.id'))
     jobs = db.relationship('Job', backref='project', lazy='dynamic')
     
     @property
@@ -168,7 +172,7 @@ class Job(db.Model):
     status = db.Column(db.Integer)
     priority = db.Column(db.Integer)
     
-    project = db.Column(db.Integer, db.ForeignKey('projects.id'))
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'))
     
     
     @property
@@ -212,7 +216,7 @@ class Company(db.Model):
 
     contact = db.relationship('Contact', secondary=company_contacts,
                               backref=db.backref('company', lazy='dynamic'))
-    projects = db.relationship('Porject', backref='company', lazy='dynamic')
+    projects = db.relationship('Project', backref='company', lazy='dynamic')
 
     def __repr__(self):
         return "<Company: %r>" % self.name
@@ -236,8 +240,7 @@ class Contact(db.Model):
     entry_date = db.Column(db.DateTime(), default=datetime.utcnow)
     last_contacted = db.Column(db.DateTime())
     
-    
-    projects = db.relationship('Porject', backref='contact', lazy='dynamic')
+    Contact_projects_id = db.relationship('Project', backref='contact', lazy='dynamic')
 
     def __repr__(self):
         return "<Contact %r: %r %r>" % (self.id, self.first_name, self.last_name)

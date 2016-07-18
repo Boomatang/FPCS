@@ -1,0 +1,47 @@
+<!-- Nav bar for all main pages. -->
+
+<!-- Bootstap Nav Haeder -->
+<nav class="navbar navbar-default">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="#">
+<!--         This image needs to be small like an icon not a brand image -->
+        <img alt="Brand" src="#">
+      </a>
+    </div>
+    <ul class="nav nav-pills">
+    
+    
+        <li role="presentation" {% if request.url_rule.endpoint == "main.index" %}class="active"{% endif %}>
+        <a href="{{ url_for('main.index') }}">Home</a></li>
+        <li role="presentation" {% if request.url_rule.endpoint == "main.products" %}class="active"{% endif %}>
+        <a href="{{ url_for('main.products') }}">Products</a></li>
+        <li role="presentation"><a href="#">News</a></li>
+        <li role="presentation" {% if request.url_rule.endpoint == "main.contact" %}class="active"{% endif %}>
+        <a href="{{ url_for('main.contact') }}">Contact Us</a></li>
+        <li role="presentation" {% if request.url_rule.endpoint == "auth.account" %}class="active"{% endif %}>
+        <a href="{{ url_for('auth.account') }}">Your Account</a></li>
+        
+        
+        <div style="margin-right: 10px; margin-left: 15px; margin-top: 5px; margin-bottom: 5px;"  class="container-fluid">
+          <ul class="nav navbar-nav navbar-right">
+      
+			<h5>
+<!-- 			The cost should change this will be a flask thing -->
+			<a href="{{ url_for('main.cart') }}"> <span class="glyphicon glyphicon-shopping-cart"></span> Cart&nbsp;&euro;23.99&nbsp;&nbsp;&nbsp;</a>
+			
+			{% if current_user.is_active %}
+            <a class="active" href="{{ url_for('auth.logout') }}"><span class="glyphicon glyphicon-log-out"></span> Logout&nbsp;&nbsp;&nbsp;</a>
+			{% else %}
+
+		    <a class="active" href="{{ url_for('auth.login') }}"><span class="glyphicon glyphicon-log-in"></span> Login&nbsp;&nbsp;&nbsp;</a>
+		    <a class="active" href="{{ url_for('auth.register') }}"><span class="glyphicon glyphicon-pencil"></span> Register</a>
+			{% endif %}
+            </h5>
+	  </div>
+      </ul>
+        
+        </ul>
+  </div>
+</nav>
+<!-- End Bootstap Nav Header     -->

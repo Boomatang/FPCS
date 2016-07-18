@@ -1,0 +1,46 @@
+
+{% extends "bootstrap/base.html" %}
+
+{% block head %}
+
+
+{% include "base/_css.html" %}
+{{ super() }}
+{% endblock %}
+
+{% block body %}
+
+
+<div id="container">
+
+
+
+{% include "base/_header.html" %}
+{% include "base/_nav.html" %}
+{% include "base/_flash.html" %}
+
+
+{% block myContent %}
+<h1>what is going on</h1>
+<h1>what is going on</h1>
+<h1>what is going on</h1>
+<h1>what is going on</h1>
+{% endblock %}
+
+{% include "base/_footer.html" %}
+
+
+
+
+</div>
+
+{% block scripts %}
+{{ super() }}
+
+
+{% endblock %}
+
+
+
+{% endblock %}
+

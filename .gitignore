@@ -187,3 +187,5 @@ ENV/
 sys.var
 *.sqlite
 trial/
+.helper
+migrations/
