@@ -35,7 +35,7 @@ class Permission:
 
 class User(UserMixin, db.Model):
     """
-    The class for the system users
+    The class for the system user
     A User wilkl most likly be part of the Labour class. This is not clear as of yet.
     
     All the informationis the basic that is need to use the flask login manger
@@ -319,6 +319,6 @@ login_manager.anonymous_user = AnonymousUser
 @login_manager.user_loader
 def load_user(user_id):
     """
-    This function is required by the login manger to load users into the session
+    This function is required by the login manger to load user into the session
     """
     return User.query.get(int(user_id))

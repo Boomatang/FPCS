@@ -1,0 +1,15 @@
+{% extends "base/base.html" %}
+{% block myContent %}
+
+<div class="row padding-sides bottom-spacing">
+
+{% include "user/_add_user.html" %}
+{% include "user/_form.html" %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% include "user/_add_user.js" %}
+{% endblock %}

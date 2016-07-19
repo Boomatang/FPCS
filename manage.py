@@ -63,6 +63,6 @@ def test(coverage=False):
         COV.erase()
 
 
-
 if __name__ == '__main__':
-    manager.run()
+    # manager.run()
+    app.run()
