@@ -40,11 +40,14 @@ def logout():
 def add_user():
 
     if request.method == 'POST':
+        new_users = []
         form = request.form
 
         form_values = build_dict(split_str(form))
-
         for i in form_values:
+            k = form_values.get(i)
+            new_users.append(User(email=k.get('mail'), password=None, username=k.get('name')))
+        for i in new_users:
             flash('this data was gotten %r' % i)
         return redirect(url_for('auth.add_user'))
 
